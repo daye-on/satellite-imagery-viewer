@@ -2,13 +2,13 @@ package org.example.tanzaniaviewer.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.example.tanzaniaviewer.dto.FilePointDto;
 import org.example.tanzaniaviewer.dto.FileRangeDto;
 import org.example.tanzaniaviewer.dto.FileSelectDto;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 @Service
@@ -47,6 +47,20 @@ public class ApiService {
                     .body(String.class);
         } catch (Exception e){
             log.error("[ApiService, select] Error: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public String getPointInObject(FilePointDto filePointDto){
+        try{
+            String reqParam = new ObjectMapper().writeValueAsString(filePointDto);
+            return restClient.post()
+                    .uri("point")
+                    .body(reqParam)
+                    .retrieve()
+                    .body(String.class);
+        } catch (Exception e){
+            log.error("[ApiService, point] Error: {}", e.getMessage());
             return null;
         }
     }

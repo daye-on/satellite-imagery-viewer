@@ -174,7 +174,6 @@
 
             let data = filename.split('/')[1];
             data = data.replace('_web.png', '')
-            data = data.split("_").pop()
 
             let oneData = `
                 <tr class="datalist `+item+`">
@@ -213,6 +212,50 @@
             opacity: 1,
             interactive: true
         }).addTo(map)
+            .on('click', function(e) {
+                let lat = e.latlng.lat.toFixed(4);
+                let lon = e.latlng.lng.toFixed(4);
+                let ncType = pngName.split('/')[0];
+                let ncName = pngName.split('/')[1].replace('_web.png', '.nc');
+
+                let requestParam = {
+                    "folder": ncType,
+                    "img_name": ncName,
+                    "lat": lat,
+                    "lon": lon
+                }
+
+                let redMarker = L.AwesomeMarkers.icon({
+                    prefix: 'bi',
+                    icon: 'bi-patch-check',
+                    markerColor: 'red'
+                });
+
+                $.ajax({
+                    type: "POST",
+                    url: "/api/point",
+                    contentType: "application/json",
+                    dataType: "json",
+                    data: JSON.stringify(requestParam),
+                    async: false,
+                    success : function(res){
+                        let popupDiv = `
+                            <span>[lat] ${lat}</span><br>
+                            <span>[lon] ${lon}</span><br>
+                            <span style="color:red; font-weight: bolder;">[${ncType}] ${res.result}</span>
+                        `
+
+                        let marker = L.marker([lat, lon], {icon: redMarker})
+                            .addTo(map)
+                            .bindPopup(popupDiv)
+                            .openPopup();
+
+                        marker.on('contextmenu', function(e) {
+                            map.removeLayer(marker);
+                        });
+                    }
+                })
+            })
     }
 
     $(document).ready(function() {
@@ -232,7 +275,6 @@
             let pngName = e.target.value;
             let name = pngName.split('/')[1];
             name = name.replace('_web.png', '')
-            name = name.split("_").pop()
             $("#image_name").text(name)
 
             resetImageLayer();

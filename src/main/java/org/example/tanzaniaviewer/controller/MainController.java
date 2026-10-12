@@ -2,6 +2,7 @@ package org.example.tanzaniaviewer.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.tanzaniaviewer.dto.FilePointDto;
 import org.example.tanzaniaviewer.dto.FileRangeDto;
 import org.example.tanzaniaviewer.dto.FileSelectDto;
 import org.example.tanzaniaviewer.service.ApiService;
@@ -35,5 +36,11 @@ public class MainController {
     @PostMapping("/api/select")
     public String getFileSelect(@RequestBody FileSelectDto fileSelectDto){
         return apiService.getFileSelectList(fileSelectDto);
+    }
+
+    @ResponseBody
+    @PostMapping("/api/point")
+    public String getPoint(@RequestBody FilePointDto filePointDto) {
+        return apiService.getPointInObject(filePointDto);
     }
 }
