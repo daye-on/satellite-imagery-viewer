@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="#">
+    <title>Test Viewer</title>
+
+    <!-- Required -->
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <link href="/tailwindcss/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="/leaflet/leaflet.css">
+    <script type="text/javascript" src="/leaflet/leaflet.js"></script>
+    <link rel="stylesheet" href="/leaflet-awesome-markers/leaflet.awesome-markers.css">
+    <script src="/leaflet-awesome-markers/leaflet.awesome-markers.js"></script>
+
+    <!-- Calendar -->
+    <script type="text/javascript" src="/daterangepicker/moment.min.js"></script>
+    <script type="text/javascript" src="/daterangepicker/daterangepicker.js"></script>
+    <link rel="stylesheet" type="text/css" href="/daterangepicker/daterangepicker.css"/>
+
+    <!-- Custom -->
+    <script type="text/javascript" src="/custom/common.js"></script>
+    <link rel="stylesheet" type="text/css" href="/custom/common.css"/>
+    <script type="text/javascript" src="/custom/colorBar.js"></script>
+    <script type="text/javascript" src="/custom/timeSlider.js"></script>
+
+</head>
+<body>
+    <div id="map"></div>
+<script>
+    const map = createLeafletMap()
+
+    // custom layer 생성
+    function getLeafletCustom(){
+
+        // 데이터 리스트
+        const customLayer = L.control();
+        customLayer.onAdd = () => {
+            const customDiv = L.DomUtil.create('div');
+            customDiv.id = 'layer-dataList'
+            return customDiv;
+        }
+        customLayer.addTo(map);
+        const dataList = document.getElementById("layer-dataList");
+        dataList.insertAdjacentHTML("afterbegin", getDataList());
+
+        let customContainer1 = customLayer.getContainer();
+        L.DomEvent.disableClickPropagation(customContainer1);
+        L.DomEvent.disableScrollPropagation(customContainer1);
+    }
+
+    // 이미지 파일명 목록 UI - 외부(기본틀)
+    function getDataList(){
+        return `
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4">
+            <div class="flex flex-col gap-2 mb-4">
+                <div style="display: flex; justify-content: space-between;">
+                    <h3 class="text-lg font-semibold text-gray-800">이미지 슬라이더</h3>
+                    <button id="data_toggle">▲</button>
+                </div>
+                <div>
+                    <span> 선택한 기간의 이미지들을 동적으로 재생시킬 수 있습니다.</span><br>
+                    <span id="contentDisplay"></span>
+                </div>
+            </div>
+            <div class="flex justify-between item-center pb-5">
+                <select id="select_data" class="pb-1" style="padding-right: 5px;">
+                    <option value="chl">Chl-A</option>
+                    <option value="sst">SST</option>
+                </select>
+                <div class="flex items-center gap-3">
+                    <input type="button" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:bg-gray-300 hover:text-gray-800"
+                        value="" id="calendar"/>
+                </div>
+            </div>
+            <div class="data-table" id="data_table">
+                <div class="grid justify-items-center pb-1">
+                    <input type="range" class="w-full" id="timeRange">
+                    <div class="flex">
+                        <button class="px-1" id="playBtn">재생</button>
+                        <button class="px-1" id="pauseBtn">일시정지</button>
+                    </div>
+                </div>
+            </div>
+        </div>`
+    }
+
+    // DateRangePicker custom
+    function getDataCalendar(id){
+
+        // 초기 세팅
+        let calendarId = "#"+id
+        const $picker = $(calendarId).daterangepicker({
+            opens: "left",
+            locale: {format: "YYYY/MM/DD", cancelLabel: "Clear"},
+            startDate: moment().subtract(7, "days"),
+            endDate: moment()
+        })
+
+        let pickerObj = $picker.data("daterangepicker");
+        let initStart = pickerObj.startDate.format("YYYY/MM/DD");
+        let initEnd = pickerObj.endDate.format("YYYY/MM/DD");
+        let dataList = getApiDataRange(initStart, initEnd);
+        updateSliderData(dataList)
+
+        $(calendarId).on("cancel.daterangepicker", function(ev, picker) {
+            $(this).val(initStart + ' - ' + initEnd);
+            dataList = getApiDataRange(initStart, initEnd);
+            updateSliderData(dataList)
+        });
+
+        $(calendarId).on("apply.daterangepicker", function(ev, picker) {
+            start_date = picker.startDate.format("YYYY/MM/DD");
+            end_date = picker.endDate.format("YYYY/MM/DD");
+            $(this).val( start_date + ' - ' + end_date);
+            dataList = getApiDataRange(start_date, end_date);
+            updateSliderData(dataList)
+        });
+    }
+
+    function getApiDataRange(start_date, end_date){
+        let requestParam = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "data_type": "all"
+        }
+
+        let result = []
+        let baseUrl = apiUrl.slice(0, apiUrl.lastIndexOf("/"));
+        $.ajax({
+            type: "POST",
+            url: "/api/range",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(requestParam),
+            async: false,
+            success : function(res){
+                let data_type = document.querySelector("#select_data").value
+                let obj = res.objects;
+
+                obj.forEach(function(o) {
+                    let url = baseUrl.concat("/", o.Key);
+                    if(url.includes(data_type))
+                        result.push(url)
+                });
+            }
+        })
+        return result;
+    }
+
+    $(document).ready(function() {
+        getTafiriMenu()
+        getLeafletCustom()
+        getDataCalendar("calendar")
+        getTableUIToggle("data_table", "data_toggle")
+
+        $(document).on("change", "#select_data", function(e){
+            let picker = $("#calendar").data("daterangepicker");
+            let start_date = picker.startDate.format("YYYY/MM/DD");
+            let end_date = picker.endDate.format("YYYY/MM/DD");
+            dataList = getApiDataRange(start_date, end_date);
+            updateSliderData(dataList)
+        })
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+body {
+    margin: 0;
+}
+
+#map {
+    width: 100%;
+    height: 100vh;
+}
+
+#layer-dataList {
+    font-family: "Outfit";
+    width: 420px;
+    padding: 15px;
+}
+
+.custom-height {
+    max-height: 350px;
+    overflow: auto;
+}
+
+.is-hidden {
+    display: none;
+}
+.data-table {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+.data-table.is-collapsed {
+    max-height: 0;
+}
+
+.nav-title{
+    color: white;
+    font-size: 20px;
+    font-family: "Outfit";
+    margin: 10px;
+    margin-bottom: 18px;
+}
+
+.nav-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: initial;
+    gap: 15px;
+}
+
+.nav-list .button-label {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    font-family: "Outfit";
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    gap: 0.8px;
+}
+
+.nav-list .button-label span {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.nav-list .button-label-active {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border: 3px solid white;
+    border-radius: 50%;
+    background-color: #000000;
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    font-family: "Outfit";
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0);
+    gap: 0.8px;
+}
+
+.nav-list li:hover a {
+    background-color: #000000;
+}
