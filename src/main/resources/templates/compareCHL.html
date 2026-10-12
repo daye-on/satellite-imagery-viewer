@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="#">
+    <title>Test Viewer</title>
+
+    <!-- Required -->
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <link href="/tailwindcss/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="/leaflet/leaflet.css">
+    <script type="text/javascript" src="/leaflet/leaflet.js"></script>
+    <link rel="stylesheet" href="/leaflet-awesome-markers/leaflet.awesome-markers.css">
+    <script src="/leaflet-awesome-markers/leaflet.awesome-markers.js"></script>
+
+    <!-- Calendar -->
+    <script type="text/javascript" src="/daterangepicker/moment.min.js"></script>
+    <script type="text/javascript" src="/daterangepicker/daterangepicker.js"></script>
+    <link rel="stylesheet" type="text/css" href="/daterangepicker/daterangepicker.css"/>
+
+    <!-- Custom -->
+    <script type="text/javascript" src="/custom/common.js"></script>
+    <link rel="stylesheet" type="text/css" href="/custom/common.css"/>
+    <script type="text/javascript" src="/custom/colorBar.js"></script>
+    <script type="text/javascript" src="/leaflet/leaflet-side-by-side-dy.js"></script>
+
+</head>
+<body>
+<div id="map"></div>
+<script>
+    const map = createLeafletMap()
+    let dataType = "Chl-a"
+
+    map.createPane("left")
+    map.createPane("right")
+    const leftTileLayer = L.tileLayer("http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}", {
+        minZoom: 2.5,
+        maxZoom: 8,
+        crs: L.CRS.EPSG4326,
+        pane: "left"
+    }).addTo(map);
+    const rightTileLayer = L.tileLayer("http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}", {
+        minZoom: 2.5,
+        maxZoom: 8,
+        crs: L.CRS.EPSG4326,
+        pane: "right"
+    }).addTo(map);
+    L.control.sideBySide(leftTileLayer, rightTileLayer).addTo(map)
+
+    function getLeafletCustom(){
+
+        // 데이터 리스트
+        const customLayer = L.control();
+        customLayer.onAdd = () => {
+            const customDiv = L.DomUtil.create("div");
+            customDiv.id = "layer-dataList"
+            return customDiv;
+        }
+        customLayer.addTo(map);
+        const dataList = document.getElementById("layer-dataList");
+        dataList.insertAdjacentHTML("afterbegin", getDataList());
+
+        let customContainer1 = customLayer.getContainer();
+        L.DomEvent.disableClickPropagation(customContainer1);
+        L.DomEvent.disableScrollPropagation(customContainer1);
+    }
+
+    function getDataList(){
+        return `
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4">
+            <div class="flex flex-col gap-2 mb-4">
+                <div style="display: flex; justify-content: space-between;">
+                    <h3 class="text-lg font-semibold text-gray-800">`+dataType+` 비교</h3>
+                    <button id="data_toggle">▲</button>
+                </div>
+                <div>
+                    <span> 다른 날짜를 선택하면, `+dataType+` 이미지를 비교할 수 있습니다.</span><br>
+                    <span id="images"></span>
+                </div>
+            </div>
+            <div class="flex justify-between item-center pb-5" id="data_table">
+                <div class="flex items-center gap-3">
+                    <input type="text" class="w-fit inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:bg-gray-300 hover:text-gray-800"
+                        style="width: 150px;"
+                        value="" id="calendar1"/>
+                   <input type="text" class="w-fit inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:bg-gray-300 hover:text-gray-800"
+                        style="width: 150px;"
+                        value="" id="calendar2"/>
+                </div>
+            </div>
+        </div>
+        `
+    }
+
+    function getDataCalendarDouble(ids){
+        let calendarId_left = "#"+ids[0]
+        const $picker_left = $(calendarId_left).daterangepicker({
+            singleDatePicker: true,
+            autoApply: true,
+            opens: "left",
+            locale: {format: "YYYY/MM/DD"},
+            startDate: moment().subtract(4, "days"), // chl 기준
+        })
+        let pickerObj_left = $picker_left.data("daterangepicker");
+        let select_date_left = pickerObj_left.startDate.format("YYYY/MM/DD");
+        getApiDataCompare("left", select_date_left)
+
+        $(calendarId_left).on("apply.daterangepicker", function(ev, picker) {
+            select_date = picker.startDate.format("YYYY/MM/DD");
+            getApiDataCompare("left", select_date)
+        });
+
+        let calendarId_right = "#"+ids[1]
+        const $picker_right = $(calendarId_right).daterangepicker({
+            singleDatePicker: true,
+            autoApply: true,
+            opens: "left",
+            locale: {format: "YYYY/MM/DD"},
+            startDate: moment().subtract(5, "days"), // chl 기준
+        })
+        let pickerObj_right = $picker_right.data("daterangepicker");
+        let select_date_right = pickerObj_right.startDate.format("YYYY/MM/DD");
+        getApiDataCompare("right", select_date_right)
+
+        $(calendarId_right).on("apply.daterangepicker", function(ev, picker) {
+            select_date = picker.startDate.format("YYYY/MM/DD");
+            getApiDataCompare("right", select_date)
+        });
+    }
+
+    function getApiDataCompare(position, select_date) {
+        let requestParam = {
+            "select_date": select_date
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/api/select",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(requestParam),
+            async: false,
+            success : function(res){
+                if(res.count === 0) {
+                    map.eachLayer((layer) => {
+                        let checkUrl = layer._url;
+                        if(checkUrl.search("google") === -1 && layer.options["pane"] === position){
+                            map.removeLayer(layer);
+                        }
+                    })
+
+                    $("#images").text("Not found - "+position)
+                } else {
+                    for (let i=0; i<res.count; i++) {
+                        let name = res.objects[i]
+                        if(name.includes("chl"))
+                            getImageOverlay(position, name)
+                    }
+
+                    $("#images").text("")
+                }
+            }
+        })
+    }
+
+    function getImageOverlay(position, url){
+        const baseUrl = apiUrl.slice(0, apiUrl.lastIndexOf("/"));
+        let imageUrl = baseUrl+"/"+url;
+
+        map.eachLayer((layer) => {
+            let checkUrl = layer._url;
+            if(checkUrl.search("google") === -1 && layer.options["pane"] === position){
+                map.removeLayer(layer);
+            }
+        })
+
+        L.imageOverlay(imageUrl, latLngBounds, { pane: position }).addTo(map);
+    }
+
+    $(document).ready(function () {
+        getTafiriMenu()
+        getLeafletCustom()
+        getDataCalendarDouble(["calendar1", "calendar2"])
+        getTableUIToggle("data_table", "data_toggle")
+    })
+</script>
+</body>
+</html>

@@ -36,10 +36,10 @@ function getTafiriMenu(){
                 <li><a class="button-label" href="/">
                     <i class="bi bi-house-fill"></i><span>Main</span>
                 </a></li>
-                <li><a class="button-label" href="#">
+                <li><a class="button-label" href="/page/compareSST">
                     <i class="bi bi-droplet-half"></i><span>SST</span>
                 </a></li>
-                <li><a class="button-label" href="#">
+                <li><a class="button-label" href="/page/compareCHL">
                     <i class="bi bi-leaf-fill"></i><span>Chl-a</span>
                 </a></li>
                 <li><a class="button-label" href="/page/same">
